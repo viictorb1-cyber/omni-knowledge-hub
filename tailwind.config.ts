@@ -47,6 +47,20 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        pabx: {
+          DEFAULT: "hsl(var(--pabx))",
+          foreground: "hsl(var(--pabx-foreground))",
+        },
+        omni: {
+          DEFAULT: "hsl(var(--omni))",
+          foreground: "hsl(var(--omni-foreground))",
+        },
+        header: {
+          DEFAULT: "hsl(var(--header-bg))",
+          foreground: "hsl(var(--header-foreground))",
+        },
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
