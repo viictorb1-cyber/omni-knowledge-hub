@@ -1,34 +1,48 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/Header';
-import { ArticleCard } from '@/components/ArticleCard';
-import { ArticleForm } from '@/components/ArticleForm';
+import { FolderCard } from '@/components/FolderCard';
+import { FolderForm } from '@/components/FolderForm';
+import { useFolderStore } from '@/stores/folderStore';
 import { useArticleStore } from '@/stores/articleStore';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Plus, Phone, MessageSquare, FileText } from 'lucide-react';
+import { ChevronLeft, Plus, Phone, MessageSquare, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Folder } from '@/types/article';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const SolutionPage = () => {
   const { category } = useParams<{ category: 'pabx' | 'omni' }>();
-  const { articles } = useArticleStore();
+  const { folders, deleteFolder } = useFolderStore();
+  const { deleteArticlesByFolderId } = useArticleStore();
   const [showForm, setShowForm] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<Folder | undefined>();
+  const [deleteFolderId, setDeleteFolderId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const categoryArticles = useMemo(() => {
-    let filtered = articles.filter(a => a.category === category);
+  const categoryFolders = useMemo(() => {
+    let filtered = folders.filter(f => f.category === category);
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(a => 
-        a.title.toLowerCase().includes(query) ||
-        a.content.toLowerCase().includes(query)
+      filtered = filtered.filter(f => 
+        f.name.toLowerCase().includes(query)
       );
     }
     
     return filtered.sort((a, b) => 
       new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
-  }, [articles, category, searchQuery]);
+  }, [folders, category, searchQuery]);
 
   const isPabx = category === 'pabx';
   const Icon = isPabx ? Phone : MessageSquare;
@@ -40,6 +54,33 @@ const SolutionPage = () => {
   if (!category || (category !== 'pabx' && category !== 'omni')) {
     return <div>Categoria não encontrada</div>;
   }
+
+  const handleEdit = (folder: Folder) => {
+    setEditingFolder(folder);
+    setShowForm(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteFolderId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteFolderId) {
+      deleteArticlesByFolderId(deleteFolderId);
+      deleteFolder(deleteFolderId);
+      setDeleteFolderId(null);
+    }
+  };
+
+  const handleFormSuccess = () => {
+    setShowForm(false);
+    setEditingFolder(undefined);
+  };
+
+  const handleFormCancel = () => {
+    setShowForm(false);
+    setEditingFolder(undefined);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -76,39 +117,43 @@ const SolutionPage = () => {
               )}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Novo Artigo
+              Nova Pasta
             </Button>
           )}
         </div>
 
         {showForm ? (
           <div className="bg-card rounded-xl p-6 border border-border">
-            <h2 className="text-xl font-semibold mb-6">Criar Novo Artigo</h2>
-            <ArticleForm 
-              category={category} 
-              onCancel={() => setShowForm(false)} 
+            <h2 className="text-xl font-semibold mb-6">
+              {editingFolder ? 'Editar Pasta' : 'Criar Nova Pasta'}
+            </h2>
+            <FolderForm 
+              category={category}
+              folder={editingFolder}
+              onCancel={handleFormCancel}
+              onSuccess={handleFormSuccess}
             />
           </div>
         ) : (
           <>
-            {categoryArticles.length === 0 ? (
+            {categoryFolders.length === 0 ? (
               <div className="text-center py-16">
                 <div className={cn(
                   "inline-flex p-6 rounded-full mb-6",
                   isPabx ? "bg-pabx/10" : "bg-omni/10"
                 )}>
-                  <FileText className={cn(
+                  <FolderOpen className={cn(
                     "h-12 w-12",
                     isPabx ? "text-pabx" : "text-omni"
                   )} />
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">
-                  Nenhum artigo encontrado
+                  Nenhuma pasta encontrada
                 </h3>
                 <p className="text-muted-foreground mb-6">
                   {searchQuery 
                     ? 'Tente buscar por outros termos.' 
-                    : 'Comece criando o primeiro artigo desta categoria.'}
+                    : 'Comece criando a primeira pasta desta categoria.'}
                 </p>
                 {!searchQuery && (
                   <Button 
@@ -118,20 +163,42 @@ const SolutionPage = () => {
                     )}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Criar Primeiro Artigo
+                    Criar Primeira Pasta
                   </Button>
                 )}
               </div>
             ) : (
-              <div className="space-y-4">
-                {categoryArticles.map(article => (
-                  <ArticleCard key={article.id} article={article} />
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {categoryFolders.map(folder => (
+                  <FolderCard 
+                    key={folder.id} 
+                    folder={folder}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </div>
             )}
           </>
         )}
       </main>
+
+      <AlertDialog open={!!deleteFolderId} onOpenChange={() => setDeleteFolderId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir pasta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é irreversível. Todos os artigos dentro desta pasta também serão excluídos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

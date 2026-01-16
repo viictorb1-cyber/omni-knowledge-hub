@@ -8,7 +8,9 @@ interface ArticleStore {
   updateArticle: (id: string, article: Partial<Article>) => void;
   deleteArticle: (id: string) => void;
   getArticlesByCategory: (category: 'pabx' | 'omni') => Article[];
+  getArticlesByFolderId: (folderId: string) => Article[];
   getArticleById: (id: string) => Article | undefined;
+  deleteArticlesByFolderId: (folderId: string) => void;
 }
 
 export const useArticleStore = create<ArticleStore>()(
@@ -41,8 +43,16 @@ export const useArticleStore = create<ArticleStore>()(
       getArticlesByCategory: (category) => {
         return get().articles.filter((article) => article.category === category);
       },
+      getArticlesByFolderId: (folderId) => {
+        return get().articles.filter((article) => article.folderId === folderId);
+      },
       getArticleById: (id) => {
         return get().articles.find((article) => article.id === id);
+      },
+      deleteArticlesByFolderId: (folderId) => {
+        set((state) => ({
+          articles: state.articles.filter((article) => article.folderId !== folderId),
+        }));
       },
     }),
     {
