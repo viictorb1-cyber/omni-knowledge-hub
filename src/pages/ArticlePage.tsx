@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { VideoEmbed } from '@/components/VideoEmbed';
 import { ArticleForm } from '@/components/ArticleForm';
 import { useArticleStore } from '@/stores/articleStore';
+import { useFolderStore } from '@/stores/folderStore';
 import { Button } from '@/components/ui/button';
 import { 
   AlertDialog,
@@ -16,7 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ChevronLeft, Edit, Trash2, Calendar, Phone, MessageSquare } from 'lucide-react';
+import { ChevronLeft, Edit, Trash2, Calendar, FolderOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -25,9 +26,11 @@ const ArticlePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getArticleById, deleteArticle } = useArticleStore();
+  const { getFolderById } = useFolderStore();
   const [isEditing, setIsEditing] = useState(false);
 
   const article = getArticleById(id || '');
+  const folder = article ? getFolderById(article.folderId) : undefined;
 
   if (!article) {
     return (
@@ -44,11 +47,10 @@ const ArticlePage = () => {
   }
 
   const isPabx = article.category === 'pabx';
-  const Icon = isPabx ? Phone : MessageSquare;
 
   const handleDelete = () => {
     deleteArticle(article.id);
-    navigate(`/solucao/${article.category}`);
+    navigate(`/pasta/${article.folderId}`);
   };
 
   if (isEditing) {
@@ -57,17 +59,18 @@ const ArticlePage = () => {
         <Header showSearch={false} />
         <main className="container mx-auto px-6 py-8">
           <Link 
-            to={`/solucao/${article.category}`}
+            to={`/pasta/${article.folderId}`}
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ChevronLeft className="h-4 w-4" />
-            Voltar para {isPabx ? 'PABX' : 'Omni'}
+            Voltar para {folder?.name || 'pasta'}
           </Link>
           
           <div className="bg-card rounded-xl p-6 border border-border">
             <h2 className="text-xl font-semibold mb-6">Editar Artigo</h2>
             <ArticleForm 
-              category={article.category} 
+              category={article.category}
+              folderId={article.folderId}
               article={article}
               onCancel={() => setIsEditing(false)} 
             />
@@ -83,11 +86,11 @@ const ArticlePage = () => {
       
       <main className="container mx-auto px-6 py-8">
         <Link 
-          to={`/solucao/${article.category}`}
+          to={`/pasta/${article.folderId}`}
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           <ChevronLeft className="h-4 w-4" />
-          Voltar para {isPabx ? 'PABX' : 'Omni'}
+          Voltar para {folder?.name || 'pasta'}
         </Link>
 
         <article className="bg-card rounded-xl border border-border overflow-hidden">
@@ -99,13 +102,13 @@ const ArticlePage = () => {
                   "p-2 rounded-lg",
                   isPabx ? "bg-pabx/10 text-pabx" : "bg-omni/10 text-omni"
                 )}>
-                  <Icon className="h-5 w-5" />
+                  <FolderOpen className="h-5 w-5" />
                 </div>
                 <span className={cn(
                   "text-sm font-medium px-3 py-1 rounded-full",
                   isPabx ? "bg-pabx/10 text-pabx" : "bg-omni/10 text-omni"
                 )}>
-                  {isPabx ? 'PABX' : 'Omni'}
+                  {folder?.name || (isPabx ? 'PABX' : 'Omni')}
                 </span>
               </div>
               
@@ -191,7 +194,17 @@ const ArticlePage = () => {
                 <h3 className="text-lg font-semibold mb-4">Vídeos</h3>
                 <div className="space-y-6">
                   {article.videos.map((url, index) => (
-                    <VideoEmbed key={index} url={url} />
+                    <div key={index}>
+                      {url.startsWith('data:') ? (
+                        <video 
+                          src={url}
+                          controls
+                          className="w-full rounded-lg border border-border"
+                        />
+                      ) : (
+                        <VideoEmbed url={url} />
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

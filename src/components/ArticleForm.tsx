@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, Image, Video } from 'lucide-react';
+import { X, Plus, Image, Video, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,11 +11,12 @@ import { cn } from '@/lib/utils';
 
 interface ArticleFormProps {
   category: 'pabx' | 'omni';
+  folderId: string;
   article?: Article;
   onCancel: () => void;
 }
 
-export function ArticleForm({ category, article, onCancel }: ArticleFormProps) {
+export function ArticleForm({ category, folderId, article, onCancel }: ArticleFormProps) {
   const navigate = useNavigate();
   const { addArticle, updateArticle } = useArticleStore();
   
@@ -23,21 +24,27 @@ export function ArticleForm({ category, article, onCancel }: ArticleFormProps) {
   const [content, setContent] = useState(article?.content || '');
   const [images, setImages] = useState<string[]>(article?.images || []);
   const [videos, setVideos] = useState<string[]>(article?.videos || []);
-  const [newImage, setNewImage] = useState('');
-  const [newVideo, setNewVideo] = useState('');
+  
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddImage = () => {
-    if (newImage.trim()) {
-      setImages([...images, newImage.trim()]);
-      setNewImage('');
-    }
-  };
+  const handleFileUpload = (
+    files: FileList | null, 
+    type: 'image' | 'video',
+    setter: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    if (!files) return;
 
-  const handleAddVideo = () => {
-    if (newVideo.trim()) {
-      setVideos([...videos, newVideo.trim()]);
-      setNewVideo('');
-    }
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (result) {
+          setter(prev => [...prev, result]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleRemoveImage = (index: number) => {
@@ -54,10 +61,10 @@ export function ArticleForm({ category, article, onCancel }: ArticleFormProps) {
     if (article) {
       updateArticle(article.id, { title, content, images, videos });
     } else {
-      addArticle({ title, content, category, images, videos });
+      addArticle({ title, content, category, folderId, images, videos });
     }
     
-    navigate(`/solucao/${category}`);
+    navigate(`/pasta/${folderId}`);
   };
 
   return (
@@ -94,17 +101,24 @@ export function ArticleForm({ category, article, onCancel }: ArticleFormProps) {
           Imagens
         </Label>
         
-        <div className="flex gap-2">
-          <Input
-            value={newImage}
-            onChange={(e) => setNewImage(e.target.value)}
-            placeholder="URL da imagem..."
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddImage())}
-          />
-          <Button type="button" onClick={handleAddImage} variant="outline" size="icon">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => handleFileUpload(e.target.files, 'image', setImages)}
+        />
+        
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => imageInputRef.current?.click()}
+          className="w-full border-dashed"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Anexar Imagens
+        </Button>
 
         {images.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -132,33 +146,50 @@ export function ArticleForm({ category, article, onCancel }: ArticleFormProps) {
       <div className="space-y-3">
         <Label className="flex items-center gap-2">
           <Video className="h-4 w-4" />
-          Vídeos (YouTube, Vimeo, Google Drive ou URL direta)
+          Vídeos
         </Label>
         
-        <div className="flex gap-2">
-          <Input
-            value={newVideo}
-            onChange={(e) => setNewVideo(e.target.value)}
-            placeholder="URL do vídeo..."
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddVideo())}
-          />
-          <Button type="button" onClick={handleAddVideo} variant="outline" size="icon">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/*"
+          multiple
+          className="hidden"
+          onChange={(e) => handleFileUpload(e.target.files, 'video', setVideos)}
+        />
+        
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => videoInputRef.current?.click()}
+          className="w-full border-dashed"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Anexar Vídeos
+        </Button>
 
         {videos.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {videos.map((url, index) => (
-              <div key={index} className="flex items-center gap-2 bg-muted p-3 rounded-lg">
-                <Video className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm truncate flex-1">{url}</span>
+              <div key={index} className="relative group">
+                {url.startsWith('data:') ? (
+                  <video 
+                    src={url}
+                    controls
+                    className="w-full rounded-lg border border-border max-h-64"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 bg-muted p-3 rounded-lg">
+                    <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm truncate flex-1">{url}</span>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => handleRemoveVideo(index)}
-                  className="text-destructive hover:text-destructive/80"
+                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3" />
                 </button>
               </div>
             ))}
