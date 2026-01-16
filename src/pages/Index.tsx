@@ -35,7 +35,7 @@ const Index = () => {
           />
           
           <SolutionCard
-            title="Omni"
+            title="OMNI"
             description="Guias e tutoriais da plataforma Omnichannel, integração de canais, configuração de fluxos e relatórios."
             icon={MessageSquare}
             articleCount={omniCount}
