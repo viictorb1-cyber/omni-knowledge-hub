@@ -11,6 +11,18 @@ interface FolderStore {
   getFolderById: (id: string) => Folder | undefined;
 }
 
+// Helper to generate UUIDs that works in non-secure contexts (HTTP)
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export const useFolderStore = create<FolderStore>()(
   persist(
     (set, get) => ({
@@ -18,7 +30,7 @@ export const useFolderStore = create<FolderStore>()(
       addFolder: (folderData) => {
         const newFolder: Folder = {
           ...folderData,
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           createdAt: new Date(),
           updatedAt: new Date(),
         };
