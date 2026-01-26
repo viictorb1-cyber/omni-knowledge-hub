@@ -14,22 +14,23 @@ interface ArticleFormProps {
   folderId: string;
   article?: Article;
   onCancel: () => void;
+  onSuccess: () => void;
 }
 
-export function ArticleForm({ category, folderId, article, onCancel }: ArticleFormProps) {
+export function ArticleForm({ category, folderId, article, onCancel, onSuccess }: ArticleFormProps) {
   const navigate = useNavigate();
   const { addArticle, updateArticle } = useArticleStore();
-  
+
   const [title, setTitle] = useState(article?.title || '');
   const [content, setContent] = useState(article?.content || '');
   const [images, setImages] = useState<string[]>(article?.images || []);
   const [videos, setVideos] = useState<string[]>(article?.videos || []);
-  
+
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (
-    files: FileList | null, 
+    files: FileList | null,
     type: 'image' | 'video',
     setter: React.Dispatch<React.SetStateAction<string[]>>
   ) => {
@@ -57,14 +58,14 @@ export function ArticleForm({ category, folderId, article, onCancel }: ArticleFo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (article) {
       updateArticle(article.id, { title, content, images, videos });
     } else {
       addArticle({ title, content, category, folderId, images, videos });
     }
-    
-    navigate(`/pasta/${folderId}`);
+
+    onSuccess();
   };
 
   return (
@@ -100,7 +101,7 @@ export function ArticleForm({ category, folderId, article, onCancel }: ArticleFo
           <Image className="h-4 w-4" />
           Imagens
         </Label>
-        
+
         <input
           ref={imageInputRef}
           type="file"
@@ -109,10 +110,10 @@ export function ArticleForm({ category, folderId, article, onCancel }: ArticleFo
           className="hidden"
           onChange={(e) => handleFileUpload(e.target.files, 'image', setImages)}
         />
-        
-        <Button 
-          type="button" 
-          variant="outline" 
+
+        <Button
+          type="button"
+          variant="outline"
           onClick={() => imageInputRef.current?.click()}
           className="w-full border-dashed"
         >
@@ -124,8 +125,8 @@ export function ArticleForm({ category, folderId, article, onCancel }: ArticleFo
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {images.map((url, index) => (
               <div key={index} className="relative group">
-                <img 
-                  src={url} 
+                <img
+                  src={url}
                   alt={`Imagem ${index + 1}`}
                   className="w-full h-32 object-cover rounded-lg border border-border"
                 />
@@ -148,7 +149,7 @@ export function ArticleForm({ category, folderId, article, onCancel }: ArticleFo
           <Video className="h-4 w-4" />
           Vídeos
         </Label>
-        
+
         <input
           ref={videoInputRef}
           type="file"
@@ -157,10 +158,10 @@ export function ArticleForm({ category, folderId, article, onCancel }: ArticleFo
           className="hidden"
           onChange={(e) => handleFileUpload(e.target.files, 'video', setVideos)}
         />
-        
-        <Button 
-          type="button" 
-          variant="outline" 
+
+        <Button
+          type="button"
+          variant="outline"
           onClick={() => videoInputRef.current?.click()}
           className="w-full border-dashed"
         >
@@ -173,7 +174,7 @@ export function ArticleForm({ category, folderId, article, onCancel }: ArticleFo
             {videos.map((url, index) => (
               <div key={index} className="relative group">
                 {url.startsWith('data:') ? (
-                  <video 
+                  <video
                     src={url}
                     controls
                     className="w-full rounded-lg border border-border max-h-64"
@@ -198,8 +199,8 @@ export function ArticleForm({ category, folderId, article, onCancel }: ArticleFo
       </div>
 
       <div className="flex gap-3 pt-4">
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className={cn(
             category === 'pabx' && "bg-pabx hover:bg-pabx/90",
             category === 'omni' && "bg-omni hover:bg-omni/90"

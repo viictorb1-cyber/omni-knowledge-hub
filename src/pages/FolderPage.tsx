@@ -21,18 +21,18 @@ const FolderPage = () => {
 
   const folderArticles = useMemo(() => {
     if (!folderId) return [];
-    
+
     let filtered = articles.filter(a => a.folderId === folderId);
-    
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(a => 
+      filtered = filtered.filter(a =>
         a.title.toLowerCase().includes(query) ||
         a.content.toLowerCase().includes(query)
       );
     }
-    
-    return filtered.sort((a, b) => 
+
+    return filtered.sort((a, b) =>
       new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
   }, [articles, folderId, searchQuery]);
@@ -53,9 +53,9 @@ const FolderPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header onSearch={setSearchQuery} />
-      
+
       <main className="container mx-auto px-6 py-8">
-        <Link 
+        <Link
           to={`/solucao/${folder.category}`}
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
@@ -78,9 +78,9 @@ const FolderPage = () => {
               </p>
             </div>
           </div>
-          
+
           {!showForm && (
-            <Button 
+            <Button
               onClick={() => setShowForm(true)}
               className={cn(
                 isPabx ? "bg-pabx hover:bg-pabx/90" : "bg-omni hover:bg-omni/90"
@@ -95,10 +95,11 @@ const FolderPage = () => {
         {showForm ? (
           <div className="bg-card rounded-xl p-6 border border-border">
             <h2 className="text-xl font-semibold mb-6">Criar Novo Artigo</h2>
-            <ArticleForm 
+            <ArticleForm
               category={folder.category}
               folderId={folder.id}
-              onCancel={() => setShowForm(false)} 
+              onCancel={() => setShowForm(false)}
+              onSuccess={() => setShowForm(false)}
             />
           </div>
         ) : (
@@ -118,12 +119,12 @@ const FolderPage = () => {
                   Nenhum artigo encontrado
                 </h3>
                 <p className="text-muted-foreground mb-6">
-                  {searchQuery 
-                    ? 'Tente buscar por outros termos.' 
+                  {searchQuery
+                    ? 'Tente buscar por outros termos.'
                     : 'Comece criando o primeiro artigo desta pasta.'}
                 </p>
                 {!searchQuery && (
-                  <Button 
+                  <Button
                     onClick={() => setShowForm(true)}
                     className={cn(
                       isPabx ? "bg-pabx hover:bg-pabx/90" : "bg-omni hover:bg-omni/90"
